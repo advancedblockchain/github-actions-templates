@@ -67,7 +67,7 @@ jobs:
 # # NPMRC JOBS
 # ---------------------------------------
     - name: Build, tag, and push image to Amazon ECR - DEV, NPMRC
-      if: ${{ github.ref == 'refs/heads/dev' }} && ${{secrets.NPM_TOKEN}}
+      if: ${{ github.ref == 'refs/heads/dev' && secrets.NPM_TOKEN }}
       env: 
         IMAGE_TAG: dev-${{ github.run_number }}
       run: |
@@ -78,7 +78,7 @@ jobs:
         docker push ${{secrets.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:$IMAGE_TAG
 
     - name: Build, tag, and push image to Amazon ECR - PRODUCTION, NPMRC
-      if: ${{ github.ref == 'refs/heads/main' }} && ${{secrets.NPM_TOKEN}}
+      if: ${{ github.ref == 'refs/heads/main' && secrets.NPM_TOKEN}}
       env: 
         IMAGE_TAG: production-${{ github.run_number }}
       run: |
@@ -132,7 +132,7 @@ jobs:
 # # NPMRC, NETWORK JOBS
 # ---------------------------------------
     - name: Deploy - DEV, NPMRC
-      if: ${{ github.ref == 'refs/heads/dev' }} && ${{inputs.NETWORKS}}
+      if: ${{ github.ref == 'refs/heads/dev' && inputs.NETWORKS}}
       env:
         IMAGE_TAG: dev-${{ github.run_number }}
         CHART_NAME: dev-chart
@@ -147,7 +147,7 @@ jobs:
         done
 
     - name: Deploy - PRODUCTION, NPMRC
-      if: ${{ github.ref == 'refs/heads/main' }} && ${{inputs.NETWORKS}}
+      if: ${{ github.ref == 'refs/heads/main' && inputs.NETWORKS}}
       env:
         IMAGE_TAG: production-${{ github.run_number }}
         CHART_NAME: production-chart
