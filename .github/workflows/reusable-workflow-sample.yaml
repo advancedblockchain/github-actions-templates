@@ -15,6 +15,8 @@ jobs:
       DEPLOYMENT_NAME: deployment
       # for network deployments
       NETWORKS: "20001 7 9"
+      # for npmrc jobs ONLY
+      NPMRC: true
     secrets:
       ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
       STAGE_KUBE_CLUSTER_NAME: ${{ secrets.STAGE_KUBE_CLUSTER_NAME }}
