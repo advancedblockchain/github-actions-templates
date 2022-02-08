@@ -1,0 +1,28 @@
+name: Build and Deploy to EKS
+
+on:
+  workflow_dispatch:
+  push: 
+    branches: 
+      - main
+      - dev
+
+jobs:
+  publish:
+    uses: advancedblockchain/sre/.github/workflows/.reusable-workflow.yaml@main
+    with:
+      ECR_REPOSITORY: advancedblockchain/repo
+      DEPLOYMENT_NAME: deployment
+      # for network deployments
+      NETWORKS: "20001 7 9"
+      # for npmrc jobs ONLY
+      NPMRC: true
+    secrets:
+      ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+      STAGE_KUBE_CLUSTER_NAME: ${{ secrets.STAGE_KUBE_CLUSTER_NAME }}
+      PRODUCTION_KUBE_CLUSTER_NAME: ${{ secrets.PRODUCTION_KUBE_CLUSTER_NAME }}
+      KUBE_NAMSPACE: ${{ secrets.KUBE_NAMSPACE }}
+      STAGE_CHART_REGISTRY: ${{ secrets.STAGE_CHART_REGISTRY }}
+      PRODUCTION_CHART_REGISTRY: ${{ secrets.PRODUCTION_CHART_REGISTRY }}
+      # for npmrc jobs ONLY
+      NPM_TOKEN: ${{secrets.NPM_TOKEN}}
