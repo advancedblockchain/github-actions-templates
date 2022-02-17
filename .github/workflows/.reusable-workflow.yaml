@@ -52,7 +52,7 @@ jobs:
       uses: aws-actions/amazon-ecr-login@v1
 
     - name: Build, tag, and push image to Amazon ECR - DEV
-      if: ${{ github.ref == 'refs/heads/dev' }}
+      if: ${{ github.ref == 'refs/heads/deploy' }}
       env: 
         IMAGE_TAG: dev-${{ github.run_number }}
       run: |
@@ -106,7 +106,7 @@ jobs:
         aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Deploy - DEV
-      if: ${{ github.ref == 'refs/heads/dev' }}
+      if: ${{ github.ref == 'refs/heads/deploy' }}
       env:
         IMAGE_TAG: dev-${{ github.run_number }}
         CHART_NAME: dev-chart
