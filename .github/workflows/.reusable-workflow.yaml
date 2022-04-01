@@ -33,6 +33,16 @@ on:
       NPM_TOKEN:
         required: false        
    
+env:
+  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+  STAGE_KUBE_CLUSTER_NAME: ${{ secrets.STAGE_KUBE_CLUSTER_NAME }}
+  PRODUCTION_KUBE_CLUSTER_NAME: ${{ secrets.PRODUCTION_KUBE_CLUSTER_NAME }}
+  KUBE_NAMSPACE: ${{ secrets.KUBE_NAMSPACE }}
+  STAGE_CHART_REGISTRY: ${{ secrets.STAGE_CHART_REGISTRY }}
+  PRODUCTION_CHART_REGISTRY: ${{ secrets.PRODUCTION_CHART_REGISTRY }}
+  ECR_REPOSITORY: ${{ inputs.ECR_REPOSITORY }}
+  DEPLOYMENT_NAME: ${{ inputs.DEPLOYMENT_NAME }}
+
 jobs:
   build: 
     name: Build
@@ -56,16 +66,16 @@ jobs:
       env: 
         IMAGE_TAG: dev-${{ github.run_number }}
       run: |
-        docker build -t ${{secrets.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:$IMAGE_TAG .
-        docker push ${{secrets.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:$IMAGE_TAG
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
     - name: Build, tag, and push image to Amazon ECR - PRODUCTION
       if: ${{ github.ref == 'refs/heads/main' }}
       env: 
         IMAGE_TAG: production-${{ github.run_number }}
       run: |
-        docker build -t ${{secrets.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:$IMAGE_TAG .
-        docker push ${{secrets.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:$IMAGE_TAG
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 # ---------------------------------------
 # # NPMRC JOBS
 # ---------------------------------------
@@ -77,8 +87,8 @@ jobs:
         echo '//registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}' > .npmrc
         echo 'registry=https://registry.npmjs.org/' >> .npmrc
         echo 'always-auth=true' >> .npmrc
-        docker build -t ${{secrets.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:$IMAGE_TAG .
-        docker push ${{secrets.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:$IMAGE_TAG
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
     - name: Build, tag, and push image to Amazon ECR - PRODUCTION, NPMRC
       if: github.ref == 'refs/heads/main' && inputs.NPMRC == true
@@ -88,8 +98,8 @@ jobs:
         echo '//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}' > .npmrc
         echo 'registry=https://registry.npmjs.org/' >> .npmrc
         echo 'always-auth=true' >> .npmrc
-        docker build -t ${{secrets.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:$IMAGE_TAG .
-        docker push ${{secrets.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:$IMAGE_TAG
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
   deploy: 
     name: Deploy
@@ -111,12 +121,12 @@ jobs:
         IMAGE_TAG: dev-${{ github.run_number }}
         CHART_NAME: dev-chart
       run: | 
-        aws eks update-kubeconfig --name ${{secrets.STAGE_KUBE_CLUSTER_NAME}}
+        aws eks update-kubeconfig --name $STAGE_KUBE_CLUSTER_NAME
         helm subenv -f ./k8s/dev.yaml
-        helm repo add $CHART_NAME ${{secrets.STAGE_CHART_REGISTRY}}
+        helm repo add $CHART_NAME $STAGE_CHART_REGISTRY
         helm repo update $CHART_NAME
-        helm template ${{inputs.DEPLOYMENT_NAME}} $CHART_NAME/advancedblockchain -n ${{secrets.KUBE_NAMSPACE}} -f ./k8s/dev.yaml
-        helm upgrade -i ${{inputs.DEPLOYMENT_NAME}} $CHART_NAME/advancedblockchain -n ${{secrets.KUBE_NAMSPACE}} -f ./k8s/dev.yaml  
+        helm template $DEPLOYMENT_NAME $CHART_NAME/advancedblockchain -n $KUBE_NAMSPACE -f ./k8s/dev.yaml
+        helm upgrade -i $DEPLOYMENT_NAME $CHART_NAME/advancedblockchain -n $KUBE_NAMSPACE -f ./k8s/dev.yaml  
 
     - name: Deploy - PRODUCTION
       if: ${{ github.ref == 'refs/heads/main' }}
@@ -124,12 +134,12 @@ jobs:
         IMAGE_TAG: production-${{ github.run_number }}
         CHART_NAME: production-chart
       run: | 
-        aws eks update-kubeconfig --name ${{secrets.PRODUCTION_KUBE_CLUSTER_NAME}}
+        aws eks update-kubeconfig --name $PRODUCTION_KUBE_CLUSTER_NAME
         helm subenv -f ./k8s/production.yaml
-        helm repo add $CHART_NAME ${{secrets.PRODUCTION_CHART_REGISTRY}}
+        helm repo add $CHART_NAME $PRODUCTION_CHART_REGISTRY
         helm repo update $CHART_NAME
-        helm template ${{inputs.DEPLOYMENT_NAME}} $CHART_NAME/advancedblockchain -n ${{secrets.KUBE_NAMSPACE}} -f ./k8s/production.yaml
-        helm upgrade -i ${{inputs.DEPLOYMENT_NAME}} $CHART_NAME/advancedblockchain -n ${{secrets.KUBE_NAMSPACE}} -f ./k8s/production.yaml
+        helm template $DEPLOYMENT_NAME $CHART_NAME/advancedblockchain -n $KUBE_NAMSPACE -f ./k8s/production.yaml
+        helm upgrade -i $DEPLOYMENT_NAME $CHART_NAME/advancedblockchain -n $KUBE_NAMSPACE -f ./k8s/production.yaml
 
 # ---------------------------------------
 # # NPMRC, NETWORK JOBS
@@ -140,13 +150,13 @@ jobs:
         IMAGE_TAG: dev-${{ github.run_number }}
         CHART_NAME: dev-chart
       run: | 
-        aws eks update-kubeconfig --name ${{secrets.STAGE_KUBE_CLUSTER_NAME}}
+        aws eks update-kubeconfig --name $STAGE_KUBE_CLUSTER_NAME
         helm subenv -f ./k8s/dev.yaml
-        helm repo add $CHART_NAME ${{secrets.STAGE_CHART_REGISTRY}}
+        helm repo add $CHART_NAME $STAGE_CHART_REGISTRY
         helm repo update $CHART_NAME
         for network in ${{INPUTS.NETWORKS}}; do 
-          helm template ${{inputs.DEPLOYMENT_NAME}} $CHART_NAME/advancedblockchain -n ${{secrets.KUBE_NAMSPACE}} -f ./k8s/dev.yaml --set env.NETWORK=${network}
-          helm upgrade -i ${{inputs.DEPLOYMENT_NAME}} $CHART_NAME/advancedblockchain -n ${{secrets.KUBE_NAMSPACE}} -f ./k8s/dev.yaml --set env.NETWORK=${network}
+          helm template $DEPLOYMENT_NAME $CHART_NAME/advancedblockchain -n $KUBE_NAMSPACE -f ./k8s/dev.yaml --set env.NETWORK=${network}
+          helm upgrade -i $DEPLOYMENT_NAME $CHART_NAME/advancedblockchain -n $KUBE_NAMSPACE -f ./k8s/dev.yaml --set env.NETWORK=${network}
         done
 
     - name: Deploy - PRODUCTION, NPMRC
@@ -155,13 +165,11 @@ jobs:
         IMAGE_TAG: production-${{ github.run_number }}
         CHART_NAME: production-chart
       run: | 
-        aws eks update-kubeconfig --name ${{secrets.PRODUCTION_KUBE_CLUSTER_NAME}}
+        aws eks update-kubeconfig --name $PRODUCTION_KUBE_CLUSTER_NAME
         helm subenv -f ./k8s/production.yaml
-        helm repo add $CHART_NAME ${{secrets.PRODUCTION_CHART_REGISTRY}}
+        helm repo add $CHART_NAME $PRODUCTION_CHART_REGISTRY
         helm repo update $CHART_NAME
         for network in ${{INPUTS.NETWORKS}}; do 
-          helm template ${{inputs.DEPLOYMENT_NAME}} $CHART_NAME/advancedblockchain -n ${{secrets.KUBE_NAMSPACE}} -f ./k8s/production.yaml
-          helm upgrade -i ${{inputs.DEPLOYMENT_NAME}} $CHART_NAME/advancedblockchain -n ${{secrets.KUBE_NAMSPACE}} -f ./k8s/production.yaml
+          helm template $DEPLOYMENT_NAME $CHART_NAME/advancedblockchain -n $KUBE_NAMSPACE -f ./k8s/production.yaml
+          helm upgrade -i $DEPLOYMENT_NAME $CHART_NAME/advancedblockchain -n $KUBE_NAMSPACE -f ./k8s/production.yaml
         done
-
-
