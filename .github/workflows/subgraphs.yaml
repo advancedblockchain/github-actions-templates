@@ -1,0 +1,57 @@
+name: DEPLOY SUBGRAPH
+
+on:
+  workflow_call:
+    inputs:
+      PROD_NETWORK_NAMES:
+        required: true
+        type: string
+      DEV_NETWORK_NAMES:
+        required: true
+        type: string
+      SUBGRAPH_FOLDER_NAME: 
+        required: true
+        type: string
+    secrets:
+      SUBGRAPH_ACCESS_TOKEN:
+        required: true
+env: 
+  PROD_NETWORK_NAMES: ${{ inputs.PROD_NETWORK_NAMES }}
+  DEV_NETWORK_NAMES: ${{ inputs.DEV_NETWORK_NAMES }}
+  SUBGRAPH_FOLDER_NAME: ${{ inputs.SUBGRAPH_FOLDER_NAME }}
+  SUBGRAPH_ACCESS_TOKEN: ${{ secrets.SUBGRAPH_ACCESS_TOKEN }}
+
+jobs: 
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: DEV - Build and Deploy
+        if: ${{ github.ref == 'refs/heads/dev' }}
+        run: |
+          cd $SUBGRAPH_FOLDER_NAME
+          yarn
+          for network_name in $DEV_NETWORK_NAMES ; do 
+            yarn prepare:${network_name}
+            graph codegen
+            graph build
+            graph auth --product hosted-service $SUBGRAPH_ACCESS_TOKEN
+            graph deploy --node https://api.thegraph.com/deploy/ advancedblockchain/dev-${network_name}-${SUBGRAPH_FOLDER_NAME}
+          done
+
+      - name: PROD - Build and Deploy
+        if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+        run: |
+          cd $SUBGRAPH_FOLDER_NAME
+          yarn
+          for network_name in $PROD_NETWORK_NAMES ; do 
+            yarn prepare:${network_name}
+            graph codegen
+            graph build
+            graph auth --product hosted-service $SUBGRAPH_ACCESS_TOKEN
+            graph deploy --node https://api.thegraph.com/deploy/ advancedblockchain/prod-${network_name}-${SUBGRAPH_FOLDER_NAME}
+          done          
