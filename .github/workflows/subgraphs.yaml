@@ -37,8 +37,8 @@ jobs:
           yarn
           for network_name in $DEV_NETWORK_NAMES ; do 
             yarn prepare:${network_name}
-            graph codegen
-            graph build
+            yarn codegen
+            yarn build
             graph auth --product hosted-service $SUBGRAPH_ACCESS_TOKEN
             graph deploy --node https://api.thegraph.com/deploy/ advancedblockchain/dev-${network_name}-${SUBGRAPH_FOLDER_NAME}
           done
@@ -50,8 +50,8 @@ jobs:
           yarn
           for network_name in $PROD_NETWORK_NAMES ; do 
             yarn prepare:${network_name}
-            graph codegen
-            graph build
+            yarn codegen
+            yarn build
             graph auth --product hosted-service $SUBGRAPH_ACCESS_TOKEN
             graph deploy --node https://api.thegraph.com/deploy/ advancedblockchain/prod-${network_name}-${SUBGRAPH_FOLDER_NAME}
           done          
